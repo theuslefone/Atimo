@@ -126,7 +126,7 @@
         const data = await response.json();
 
         // Aqui: transforma o texto puro em HTML estruturado simples (parágrafos)
-        const textoTraduzido = data.translatedText;
+        const textoTraduzido = Array.isArray(data.translations) ? data.translations.join('\n') : '';
 
         // Exemplo simples: quebra linhas em parágrafos
         const htmlFormatado = textoTraduzido
