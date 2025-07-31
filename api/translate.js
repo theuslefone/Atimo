@@ -1,8 +1,16 @@
-// api/translate.js
-
-import fetch from 'node-fetch'; // se Vercel já tiver fetch nativo, pode usar direto
+import fetch from 'node-fetch'; // Pode remover se estiver no Node 18+
 
 export default async function handler(req, res) {
+  // Habilita CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Responde rapidamente a requisições OPTIONS (preflight)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
@@ -22,13 +30,11 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-
     const translatedText = data[0].map(item => item[0]).join('');
 
-    res.status(200).json({ translatedText });
-
+    return res.status(200).json({ translatedText });
   } catch (error) {
     console.error('Erro no proxy:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
