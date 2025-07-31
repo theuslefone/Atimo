@@ -1,8 +1,31 @@
-import fetch from 'node-fetch'; // Pode remover se estiver no Node 18+
+import Cors from 'cors';
 
-// pages/api/translate.js
+// Inicializa o middleware CORS
+const cors = Cors({
+  methods: ['POST', 'OPTIONS'],
+  origin: '*', // <== libera para qualquer origem (para testes). No produção, coloque seu domínio
+});
+
+// Helper para rodar o middleware no Next.js
+function runMiddleware(req, res, fn) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
 
 export default async function handler(req, res) {
+  await runMiddleware(req, res, cors);  // chama o CORS antes de processar
+
+  if (req.method === 'OPTIONS') {
+    // Para requisições preflight OPTIONS, responde OK rápido
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
@@ -11,10 +34,9 @@ export default async function handler(req, res) {
     const { q, target, source } = req.body;
 
     if (!q || !target) {
-      return res.status(400).json({ error: "Parâmetros 'q' (texto) e 'target' (idioma destino) são obrigatórios." });
+      return res.status(400).json({ error: "Parâmetros 'q' (texto) e 'target' são obrigatórios." });
     }
 
-    // Se q for array, traduzir todos
     const textos = Array.isArray(q) ? q : [q];
     const traducoes = [];
 
@@ -31,11 +53,10 @@ export default async function handler(req, res) {
       traducoes.push(traducao);
     }
 
-    res.status(200).json({ translations: traducoes });
+    return res.status(200).json({ translations: traducoes });
 
   } catch (error) {
     console.error('Erro no proxy:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
-
